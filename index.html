@@ -106,9 +106,54 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 .exp-backup-btn.csv{color:#b06000;border-color:var(--accent-orange);background:#fef7e0;width:100%}
 .exp-empty{color:var(--text-secondary);font-size:14px;text-align:center;padding:20px 0}
 @media(min-width:768px){.hero{padding:60px 20px 32px}.hero h1{font-size:32px}#map{height:360px}.section-wrap{padding:24px}}
+#pw-gate{position:fixed;inset:0;background:linear-gradient(135deg,#1a73e8,#0d47a1);display:flex;align-items:center;justify-content:center;z-index:9999;padding:24px}
+#pw-box{background:#fff;border-radius:20px;padding:36px 28px;width:100%;max-width:320px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+#pw-box h2{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px}
+#pw-box p{font-size:14px;color:var(--text-secondary);margin-bottom:24px}
+#pw-input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:18px;letter-spacing:4px;text-align:center;color:var(--text);margin-bottom:12px;-webkit-appearance:none;appearance:none;outline:none}
+#pw-input:focus{border-color:var(--primary)}
+#pw-input.error{border-color:var(--accent);animation:shake .3s}
+#pw-submit{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:16px;font-weight:600;cursor:pointer}
+#pw-error{font-size:13px;color:var(--accent);margin-top:8px;min-height:18px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 </style>
 </head>
 <body>
+
+<div id="pw-gate">
+  <div id="pw-box">
+    <h2>Road Trip 2026</h2>
+    <p>Enter password to continue</p>
+    <input id="pw-input" type="password" inputmode="numeric" placeholder="••••••" autocomplete="current-password">
+    <button id="pw-submit" onclick="checkPw()">Unlock</button>
+    <div id="pw-error"></div>
+  </div>
+</div>
+<script>
+(function(){
+  if(localStorage.getItem('rt26_auth')==='1'){
+    document.getElementById('pw-gate').style.display='none';
+  }
+  document.getElementById('pw-input').addEventListener('keydown',function(e){
+    if(e.key==='Enter') checkPw();
+  });
+  // Auto-focus on mobile after a tick so keyboard appears
+  setTimeout(function(){ document.getElementById('pw-input').focus(); }, 100);
+})();
+function checkPw(){
+  var v=document.getElementById('pw-input').value;
+  if(v==='ko1113'){
+    localStorage.setItem('rt26_auth','1');
+    document.getElementById('pw-gate').style.display='none';
+  } else {
+    var inp=document.getElementById('pw-input');
+    inp.classList.add('error');
+    document.getElementById('pw-error').textContent='Wrong password';
+    inp.value='';
+    setTimeout(function(){ inp.classList.remove('error'); },400);
+  }
+}
+</script>
 
 <div class="hero">
   <h1>Summer Road Trip 2026</h1>
