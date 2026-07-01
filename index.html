@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Road Trip">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Road Trip 2026 — Copenhagen Loop</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--primary:#1a73e8;--primary-light:#e8f0fe;--accent:#ea4335;--accent-green:#34a853;--accent-orange:#fbbc04;--text:#202124;--text-secondary:#5f6368;--border:#dadce0;--shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.06);--radius:12px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:80px}
+.hero{background:linear-gradient(135deg,#1a73e8,#0d47a1);color:#fff;padding:48px 20px 24px;text-align:center}
+.hero h1{font-size:26px;font-weight:700;margin-bottom:4px}
+.hero .subtitle{font-size:14px;opacity:.85;margin-bottom:16px}
+.stats-row{display:flex;justify-content:center;gap:20px;flex-wrap:wrap}
+.stat{text-align:center}.stat .num{font-size:22px;font-weight:700}.stat .label{font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.5px}
+#map{height:280px;width:100%;z-index:1}.day-map{height:200px;width:calc(100% + 32px);margin:0 -16px 12px;z-index:1;display:block}
+.leaflet-popup-content{font-family:var(--font);font-size:13px}
+.tab-bar{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 8px}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;padding:12px 14px;border:none;background:none;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+.tab-btn:hover{color:var(--primary)}
+.tab-btn .day-num{font-weight:700}
+.section-wrap{padding:16px;max-width:640px;margin:0 auto}
+.day-section{display:none}.day-section.active{display:block}
+.day-header{margin-bottom:16px}
+.day-header h2{font-size:22px;font-weight:700;margin-bottom:2px}
+.day-header .date{font-size:14px;color:var(--text-secondary)}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+.card-header{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.card-header .icon{font-size:20px;flex-shrink:0}.card-header .title{font-weight:600;font-size:15px;flex:1}
+.card-header .chevron{font-size:18px;color:var(--text-secondary);transition:transform .2s}
+.card.open .card-header .chevron{transform:rotate(180deg)}
+.card-body{display:none;padding:0 16px 16px}.card.open .card-body{display:block}
+.route-summary{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--primary-light);font-size:14px;font-weight:500;color:var(--primary);flex-wrap:wrap}
+.route-summary .arrow{font-weight:700}
+.route-meta{display:flex;gap:16px;padding:10px 16px;font-size:13px;color:var(--text-secondary);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.route-meta span{display:flex;align-items:center;gap:4px}
+.content-block{margin-bottom:14px}.content-block:last-child{margin-bottom:0}
+.content-block h4{font-size:13px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.content-block p,.content-block li{font-size:14px;line-height:1.6}
+.content-block ul{list-style:none;padding:0}
+.content-block li{padding:4px 0 4px 20px;position:relative}
+.content-block li::before{content:'';position:absolute;left:0;top:12px;width:8px;height:8px;border-radius:50%;background:var(--primary-light);border:2px solid var(--primary)}
+.tip{background:#fef7e0;border-left:3px solid var(--accent-orange);padding:10px 12px;border-radius:0 8px 8px 0;font-size:13px;margin-top:8px}
+.tip strong{color:#b06000}
+.tip-green{background:#e6f4ea;border-left-color:var(--accent-green)}.tip-green strong{color:#137333}
+.checklist label{display:flex;align-items:flex-start;gap:10px;padding:8px 0;font-size:14px;cursor:pointer;border-bottom:1px solid #f1f3f4}
+.checklist label:last-child{border-bottom:none}
+.checklist input[type="checkbox"]{margin-top:3px;width:18px;height:18px;accent-color:var(--primary);flex-shrink:0}
+.checklist .checked{text-decoration:line-through;color:var(--text-secondary)}
+.overview-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+.overview-card h3{font-size:17px;margin-bottom:12px}
+.country-list{display:flex;flex-wrap:wrap;gap:8px}
+.country-tag{background:var(--primary-light);color:var(--primary);padding:6px 12px;border-radius:20px;font-size:13px;font-weight:500}
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;padding-bottom:16px}
+.timeline-item::before{content:'';position:absolute;left:-20px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--primary);border:2px solid #fff;box-shadow:0 0 0 2px var(--primary)}
+.timeline-item.rest::before{background:var(--accent-green);box-shadow:0 0 0 2px var(--accent-green)}
+.timeline-item .tl-day{font-size:12px;color:var(--text-secondary)}
+.timeline-item .tl-title{font-weight:600;font-size:14px}
+.timeline-item .tl-detail{font-size:13px;color:var(--text-secondary)}
+.no-drive-badge{display:inline-block;background:#e6f4ea;color:#137333;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.drive-badge{display:inline-block;background:var(--primary-light);color:var(--primary);padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.highlight-box{background:linear-gradient(135deg,#e8f0fe,#d2e3fc);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.highlight-box h4{color:var(--primary);margin-bottom:4px;text-transform:none;letter-spacing:0;font-size:15px}
+.highlight-box p{font-size:13px;color:#1a56b0}
+.hotel-confirmed{background:#e6f4ea;border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;font-size:14px}
+.hotel-confirmed .hotel-name{font-weight:700;color:#137333}
+.hotel-confirmed .hotel-meta{font-size:13px;color:#137333;opacity:.8}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 max(8px,env(safe-area-inset-bottom));z-index:200}
+.bottom-btn{display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:none;font-family:var(--font);font-size:10px;color:var(--text-secondary);cursor:pointer;padding:4px 12px}
+.bottom-btn .icon{font-size:22px}.bottom-btn.active{color:var(--primary)}
+.exp-form-row{margin-bottom:12px}.exp-form-row label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.exp-form-row input,.exp-form-row select{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:15px;color:var(--text);background:#fff;-webkit-appearance:none;appearance:none}
+.exp-form-row input:focus,.exp-form-row select:focus{outline:none;border-color:var(--primary)}
+.exp-currency-btns{display:flex;gap:6px}.exp-currency-btn{flex:1;padding:10px 6px;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:var(--font);font-size:14px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;text-align:center}
+.exp-currency-btn.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary)}
+.exp-submit{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:16px;font-weight:600;cursor:pointer;margin-top:4px;-webkit-tap-highlight-color:transparent}
+.exp-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px}
+.exp-summary-tile{background:var(--primary-light);border-radius:10px;padding:12px 14px;text-align:center}
+.exp-summary-tile .cur{font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px}
+.exp-summary-tile .amt{font-size:20px;font-weight:700;color:var(--text);margin-top:2px}
+.exp-summary-tile .cnt{font-size:11px;color:var(--text-secondary);margin-top:2px}
+.exp-cat-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f3f4}.exp-cat-row:last-child{border-bottom:none}
+.exp-cat-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}.exp-cat-label{font-size:14px;color:var(--text-secondary);flex:1}.exp-cat-amt{font-size:13px;font-weight:600;color:var(--text);text-align:right}
+.exp-day-hdr{font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;padding:10px 0 4px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.exp-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f1f3f4}.exp-item:last-child{border-bottom:none}
+.exp-item .ci{font-size:20px;width:26px;text-align:center;flex-shrink:0}
+.exp-item .ei{flex:1;min-width:0}.exp-item .ed{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.exp-item .em{font-size:12px;color:var(--text-secondary)}
+.exp-item .ea{font-size:14px;font-weight:700;white-space:nowrap;color:var(--text)}
+.exp-item .del{border:none;background:none;color:var(--text-secondary);font-size:16px;cursor:pointer;padding:6px 4px;flex-shrink:0;border-radius:6px;line-height:1;-webkit-tap-highlight-color:transparent}
+.exp-item .del:active{background:#fce8e6;color:var(--accent)}
+.exp-backup-btns{display:flex;gap:8px;margin-bottom:8px}
+.exp-backup-btn{flex:1;padding:12px 8px;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;-webkit-tap-highlight-color:transparent}
+.exp-backup-btn.dl{color:var(--primary);border-color:var(--primary);background:var(--primary-light)}
+.exp-backup-btn.ul{color:#137333;border-color:var(--accent-green);background:#e6f4ea}
+.exp-backup-btn.csv{color:#b06000;border-color:var(--accent-orange);background:#fef7e0;width:100%}
+.exp-empty{color:var(--text-secondary);font-size:14px;text-align:center;padding:20px 0}
+@media(min-width:768px){.hero{padding:60px 20px 32px}.hero h1{font-size:32px}#map{height:360px}.section-wrap{padding:24px}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Summer Road Trip 2026</h1>
+  <div class="subtitle">Copenhagen Loop &middot; Jul 16 &ndash; 31</div>
+  <div class="stats-row">
+    <div class="stat"><div class="num">16</div><div class="label">Days</div></div>
+    <div class="stat"><div class="num">~2,500</div><div class="label">Km</div></div>
+    <div class="stat"><div class="num">5</div><div class="label">Countries</div></div>
+    <div class="stat"><div class="num">10</div><div class="label">Stops</div></div>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" data-target="overview"><span class="day-num">Overview</span></button>
+  <button class="tab-btn" data-target="day1"><span class="day-num">Day 1</span></button>
+  <button class="tab-btn" data-target="day2"><span class="day-num">Day 2</span></button>
+  <button class="tab-btn" data-target="day3"><span class="day-num">Day 3</span></button>
+  <button class="tab-btn" data-target="day4"><span class="day-num">Day 4</span></button>
+  <button class="tab-btn" data-target="day5"><span class="day-num">Day 5</span></button>
+  <button class="tab-btn" data-target="day6"><span class="day-num">Day 6</span></button>
+  <button class="tab-btn" data-target="day7"><span class="day-num">Day 7</span></button>
+  <button class="tab-btn" data-target="day8"><span class="day-num">Day 8</span></button>
+  <button class="tab-btn" data-target="day9"><span class="day-num">Day 9</span></button>
+  <button class="tab-btn" data-target="day10"><span class="day-num">Day 10</span></button>
+  <button class="tab-btn" data-target="day11"><span class="day-num">Day 11</span></button>
+  <button class="tab-btn" data-target="day12"><span class="day-num">Day 12</span></button>
+  <button class="tab-btn" data-target="day13"><span class="day-num">Day 13</span></button>
+  <button class="tab-btn" data-target="day14"><span class="day-num">Day 14</span></button>
+  <button class="tab-btn" data-target="day15"><span class="day-num">Day 15</span></button>
+  <button class="tab-btn" data-target="day16"><span class="day-num">Day 16</span></button>
+  <button class="tab-btn" data-target="packing"><span class="day-num">Packing</span></button>
+  <button class="tab-btn" data-target="info"><span class="day-num">Info</span></button>
+  <button class="tab-btn" data-target="expenses"><span class="day-num">&#128176; Expenses</span></button>
+</div>
+
+<div class="section-wrap">
+
+<!-- ==================== OVERVIEW ==================== -->
+<div class="day-section active" id="overview">
+  <div class="overview-card">
+    <h3>Route Overview</h3>
+    <div class="country-list" style="margin-bottom:16px;">
+      <span class="country-tag">Denmark</span>
+      <span class="country-tag">Germany</span>
+      <span class="country-tag">Czech Republic</span>
+      <span class="country-tag">Austria</span>
+      <span class="country-tag">Slovakia</span>
+    </div>
+    <p style="font-size:14px;color:var(--text-secondary);">A loop from Copenhagen south to Vienna and back. Outbound via the eastern corridor (Berlin, Dresden, Prague, Vienna), return via Bratislava, Brno, Leipzig, and L&uuml;beck. All hotels booked and confirmed.</p>
+  </div>
+
+  <div class="overview-card">
+    <h3>Trip Timeline</h3>
+    <div class="timeline">
+      <div class="timeline-item"><div class="tl-day">Day 1 &middot; Jul 16</div><div class="tl-title">Copenhagen &rarr; Rostock</div><div class="tl-detail">Ferry + 170 km &middot; Baltic coast</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 2 &middot; Jul 17</div><div class="tl-title">Rostock &rarr; Berlin</div><div class="tl-detail">230 km &middot; East Side Gallery</div></div>
+      <div class="timeline-item rest"><div class="tl-day">Day 3 &middot; Jul 18</div><div class="tl-title">Berlin</div><div class="tl-detail">Wall &middot; city sightseeing</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 4 &middot; Jul 19</div><div class="tl-title">Berlin &rarr; Tropical Islands</div><div class="tl-detail">60 km &middot; Water park + overnight</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 5 &middot; Jul 20</div><div class="tl-title">Tropical Islands &rarr; Dresden</div><div class="tl-detail">170 km &middot; Zwinger, Frauenkirche</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 6 &middot; Jul 21</div><div class="tl-title">Dresden &rarr; Prague</div><div class="tl-detail">150 km &middot; Old Town evening</div></div>
+      <div class="timeline-item rest"><div class="tl-day">Day 7 &middot; Jul 22</div><div class="tl-title">Prague</div><div class="tl-detail">Prague Zoo &middot; Kampa Island</div></div>
+      <div class="timeline-item rest"><div class="tl-day">Day 8 &middot; Jul 23</div><div class="tl-title">Prague</div><div class="tl-detail">Castle &middot; Letn&aacute; Park &middot; Tech Museum</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 9 &middot; Jul 24</div><div class="tl-title">Prague &rarr; Vienna</div><div class="tl-detail">330 km &middot; Sch&ouml;nbrunn</div></div>
+      <div class="timeline-item rest"><div class="tl-day">Day 10 &middot; Jul 25</div><div class="tl-title">Vienna</div><div class="tl-detail">Prater roller coasters!</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 11 &middot; Jul 26</div><div class="tl-title">Vienna &rarr; Bratislava</div><div class="tl-detail">80 km &middot; Old town afternoon</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 12 &middot; Jul 27</div><div class="tl-title">Bratislava &rarr; Brno</div><div class="tl-detail">130 km &middot; Castle &amp; underground</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 13 &middot; Jul 28</div><div class="tl-title">Brno &rarr; Leipzig</div><div class="tl-detail">450 km &middot; Longest drive</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 14 &middot; Jul 29</div><div class="tl-title">Leipzig &rarr; L&uuml;beck</div><div class="tl-detail">380 km &middot; Marzipan &amp; old town</div></div>
+      <div class="timeline-item rest"><div class="tl-day">Day 15 &middot; Jul 30</div><div class="tl-title">Hansa Park</div><div class="tl-detail">Roller coasters all day!</div></div>
+      <div class="timeline-item"><div class="tl-day">Day 16 &middot; Jul 31</div><div class="tl-title">L&uuml;beck &rarr; Copenhagen</div><div class="tl-detail">250 km + ferry &middot; Home!</div></div>
+    </div>
+  </div>
+
+  <div class="overview-card">
+    <h3>Key Highlights</h3>
+    <ul style="list-style:none;padding:0;">
+      <li style="padding:6px 0;font-size:14px;">&#127754; <strong>Tropical Islands</strong> &mdash; Giant water park + overnight stay</li>
+      <li style="padding:6px 0;font-size:14px;">&#128058; <strong>Prague Zoo</strong> &mdash; One of Europe's best zoos</li>
+      <li style="padding:6px 0;font-size:14px;">&#127917; <strong>Prater Vienna</strong> &mdash; Roller coasters &amp; giant ferris wheel</li>
+      <li style="padding:6px 0;font-size:14px;">&#127917; <strong>Hansa Park</strong> &mdash; Major theme park near L&uuml;beck</li>
+      <li style="padding:6px 0;font-size:14px;">&#127958; <strong>Berlin Wall</strong> &mdash; East Side Gallery</li>
+      <li style="padding:6px 0;font-size:14px;">&#127958; <strong>Prague</strong> &mdash; Castle, Charles Bridge, 3 full days</li>
+      <li style="padding:6px 0;font-size:14px;">&#127958; <strong>Dresden</strong> &mdash; Zwinger Palace, Frauenkirche</li>
+    </ul>
+  </div>
+
+  <div class="overview-card">
+    <h3>All Hotels (Confirmed)</h3>
+    <div style="font-size:13px;line-height:1.8;">
+      <div><strong>Jul 16:</strong> ScanHotels City, Rostock</div>
+      <div><strong>Jul 17&ndash;19:</strong> InterContinental Berlin</div>
+      <div><strong>Jul 19:</strong> Tropical Islands, Krausnick</div>
+      <div><strong>Jul 20:</strong> Boutique Hotel Rothenburger Hof, Dresden</div>
+      <div><strong>Jul 21&ndash;24:</strong> Rooftop Planet Prague Hotel</div>
+      <div><strong>Jul 24&ndash;26:</strong> Der Wilhelmshof, Vienna</div>
+      <div><strong>Jul 26:</strong> Park Inn by Radisson Danube, Bratislava</div>
+      <div><strong>Jul 27:</strong> Grandezza Hotel Luxury Palace, Brno</div>
+      <div><strong>Jul 28:</strong> NH Leipzig Zentrum</div>
+      <div><strong>Jul 29&ndash;31:</strong> Holiday Inn L&uuml;beck</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DAY 1 ==================== -->
+<div class="day-section" id="day1">
+  <div class="day-header"><h2>Day 1 &mdash; Rostock</h2><div class="date">Wednesday, July 16 &middot; <span class="drive-badge">Drive + ferry</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">ScanHotels City, Rostock</span><br><span class="hotel-meta">Jul 16&ndash;17 &middot; DKK 2,063 &middot; Confirmed</span></div>
+  <div class="card open">
+    <div class="route-summary"><span>Copenhagen</span><span class="arrow">&rarr;</span><span>Gedser</span><span class="arrow">&rarr;</span><span>Rostock</span></div>
+    <div class="route-meta"><span id="rdist-day1">&#128663; ~170 km</span><span>&#9881; 2 h ferry</span><span>&#9201; ~4.5 h total</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day1"></div>
+      <div class="content-block"><h4>Route</h4><p>Drive south across Sj&aelig;lland to Gedser (~170 km, ~2 h). <strong>Scandlines ferry</strong> Gedser&ndash;Rostock (~2 hours). Hotel is in Rostock city centre.</p>
+        <div class="tip tip-green"><strong>Ferry booked!</strong> Gedser &rarr; Rostock, departs <strong>13:30</strong>, arrives <strong>15:30</strong>. The ferry has a restaurant, play area, and deck.</div>
+      </div>
+      <div class="content-block"><h4>Charging</h4><ul><li>170 km is easy on a full charge. Top up at <strong>Tesla Supercharger Rostock</strong> on arrival.</li></ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Warnem&uuml;nde Beach</strong> &mdash; 15 min from Rostock. Wide sandy beach, Strandkorb chairs, shallow water for kids. A lovely arrival afternoon.</li>
+      <li><strong>Warnem&uuml;nde Lighthouse</strong> &mdash; climb for panoramic views.</li>
+      <li><strong>Alter Strom harbour</strong> &mdash; old fishing harbour with Fischbr&ouml;tchen stands.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Lunch:</strong> On the Scandlines ferry (buffet and caf&eacute;).</li>
+      <li><strong>Dinner:</strong> Fischbr&ouml;tchen at Warnem&uuml;nde harbour, or <strong>Fischerklause</strong> on the promenade for sit-down seafood. Try Backfisch (battered fried fish).</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 2 ==================== -->
+<div class="day-section" id="day2">
+  <div class="day-header"><h2>Day 2 &mdash; Berlin (Arrive)</h2><div class="date">Thursday, July 17 &middot; <span class="drive-badge">Short drive</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">InterContinental Berlin by IHG</span><br><span class="hotel-meta">Jul 17&ndash;19 &middot; DKK 3,582 &middot; 2 nights &middot; Confirmed</span></div>
+  <div class="card open">
+    <div class="route-summary"><span>Rostock</span><span class="arrow">&rarr;</span><span>Berlin</span></div>
+    <div class="route-meta"><span id="rdist-day2">&#128663; ~230 km</span><span>&#9201; ~2.5 h</span><span>&#9889; Likely no stop</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day2"></div>
+      <div class="content-block"><h4>Route</h4><p>A19 south, then A24/A10 into Berlin. Straightforward autobahn.</p></div>
+      <div class="content-block"><h4>Charging</h4><ul><li>230 km from a full charge &mdash; drive straight through. Charge at hotel or nearby Supercharger.</li></ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities (Afternoon)</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>East Side Gallery</strong> &mdash; longest remaining Berlin Wall stretch (1.3 km), covered in murals. Free, stroller-friendly. <em>Your Berlin Wall visit!</em></li>
+      <li><strong>Gleisdreieckpark</strong> &mdash; fantastic playground on old railway tracks.</li>
+      <li><strong>Brandenburg Gate &amp; Tiergarten</strong> &mdash; iconic landmarks, big park for the kids to run.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Lunch:</strong> <strong>Curry 36</strong> (Mehringdamm) &mdash; Berlin's famous Currywurst. Or any D&ouml;ner Kebab spot.</li>
+      <li><strong>Dinner:</strong> <strong>Prater Garten</strong> (Prenzlauer Berg) &mdash; Berlin's oldest beer garden. Schnitzel, bratwurst, big outdoor space.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 3 ==================== -->
+<div class="day-section" id="day3">
+  <div class="day-header"><h2>Day 3 &mdash; Berlin</h2><div class="date">Friday, July 18 &middot; <span class="no-drive-badge">No driving</span></div></div>
+  <div class="card open"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body" style="display:block"><div class="content-block"><h4>Full day in Berlin</h4><ul>
+      <li><strong>Natural History Museum</strong> &mdash; world's tallest mounted dinosaur skeleton. The 9 &amp; 10 year olds will love it.</li>
+      <li><strong>Legoland Discovery Centre</strong> (Potsdamer Platz) &mdash; indoor Lego attraction, rides, 4D cinema. ~2&ndash;3 hours.</li>
+      <li><strong>Reichstag dome</strong> &mdash; free visit with audio guide. Book online in advance (free but slots fill).</li>
+      <li><strong>DDR Museum</strong> &mdash; interactive museum about East Germany. Sit in a Trabant!</li>
+      <li><strong>Tempelhofer Feld</strong> &mdash; former airport runway, now massive park. Rent bikes, fly kites.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Lunch:</strong> <strong>Markthalle Neun</strong> (Kreuzberg) indoor food market, or <strong>Burgermeister</strong> under a U-Bahn bridge.</li>
+      <li><strong>Dinner:</strong> <strong>BRLO Brwhouse</strong> (craft beer, burgers, terrace in Gleisdreieck) or <strong>Hofbr&auml;u Berlin</strong> (beer hall, schnitzel).</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 4 ==================== -->
+<div class="day-section" id="day4">
+  <div class="day-header"><h2>Day 4 &mdash; Tropical Islands</h2><div class="date">Saturday, July 19 &middot; <span class="drive-badge">Short drive</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">Tropical Islands Resort, Krausnick</span><br><span class="hotel-meta">Jul 19&ndash;20 &middot; DKK 1,885 &middot; Confirmed</span></div>
+  <div class="highlight-box">
+    <h4>&#127754; Tropical Islands &mdash; All Day + Overnight!</h4>
+    <p>A massive tropical water park inside a former airship hangar &mdash; the largest free-standing building in the world. Water slides, wave pool, tropical lagoon, sandy beach, baby pool. You're staying overnight so you can enjoy it at a relaxed pace, including evening swimming!</p>
+  </div>
+  <div class="card open">
+    <div class="route-summary"><span>Berlin</span><span class="arrow">&rarr;</span><span>Tropical Islands, Krausnick</span></div>
+    <div class="route-meta"><span id="rdist-day4">&#128663; ~60 km</span><span>&#9201; ~45 min</span><span>&#9889; No charge needed</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day4"></div>
+      <div class="content-block"><h4>Route</h4><p>A13 southeast from Berlin. Quick drive. Tesla Supercharger at the resort.</p></div>
+    </div>
+  </div>
+  <div class="card open"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body" style="display:block"><div class="content-block"><ul>
+      <li><strong>Water slides</strong> &mdash; multiple slides from family-friendly to thrilling. Turbo slide, crazy river, outdoor splash area.</li>
+      <li><strong>Wave pool &amp; tropical lagoon</strong> &mdash; warm water, sandy beach, palm trees indoors.</li>
+      <li><strong>Baby pool area</strong> &mdash; shallow pools and gentle features for the 1-year-old.</li>
+      <li><strong>Tropical rainforest walk</strong> &mdash; real tropical plants and birds inside the dome.</li>
+      <li><strong>Evening swimming</strong> &mdash; since you're staying overnight, you can swim in the evening when it's quieter. The indoor lagoon is magical with evening lighting.</li>
+      <li><strong>Entry:</strong> ~&euro;45&ndash;50/adult, ~&euro;35&ndash;40/child. Under 3 free. Included with overnight stay? Check when booking.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li>Multiple food courts and restaurants inside the resort. Tropical-themed dining, pizza, Asian food, burgers.</li>
+      <li>Breakfast included with overnight stay (check booking).</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 5 ==================== -->
+<div class="day-section" id="day5">
+  <div class="day-header"><h2>Day 5 &mdash; Dresden</h2><div class="date">Sunday, July 20 &middot; <span class="drive-badge">Short drive</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">Boutique Hotel Rothenburger Hof, Dresden</span><br><span class="hotel-meta">Jul 20&ndash;21 &middot; DKK 1,688 &middot; Confirmed</span></div>
+  <div class="card open">
+    <div class="route-summary"><span>Tropical Islands</span><span class="arrow">&rarr;</span><span>Dresden</span></div>
+    <div class="route-meta"><span id="rdist-day5">&#128663; ~170 km</span><span>&#9201; ~2 h</span><span>&#9889; 1 charge stop possible</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day5"></div>
+      <div class="content-block"><h4>Route</h4><p>A13 south from Krausnick, continue on A13/A4 to Dresden. Easy drive through Brandenburg and Saxony.</p></div>
+      <div class="content-block"><h4>Charging</h4><ul>
+        <li>Charge at Tropical Islands Supercharger before departure, or at <strong>Tesla Supercharger Dresden</strong> on arrival.</li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="card open"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities (Afternoon)</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body" style="display:block"><div class="content-block"><ul>
+      <li><strong>Zwinger Palace</strong> &mdash; stunning baroque palace. Walk the courtyard (free), see the fountains. Old Masters Gallery inside if time permits.</li>
+      <li><strong>Frauenkirche</strong> &mdash; beautifully reconstructed church. Free entry. Climb the dome for city views.</li>
+      <li><strong>Br&uuml;hl's Terrace</strong> &mdash; "The Balcony of Europe" &mdash; scenic walkway above the Elbe.</li>
+      <li><strong>Dresden Transport Museum</strong> &mdash; trains, cars, ships, planes. The 9 &amp; 10 year olds will love it.</li>
+      <li><strong>Neustadt</strong> &mdash; cross the river to the bohemian quarter for a different vibe, street art, caf&eacute;s.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Lunch:</strong> Breakfast at Tropical Islands, then grab lunch at <strong>Augustiner an der Frauenkirche</strong> &mdash; Bavarian beer hall, schnitzel, pretzels.</li>
+      <li><strong>Dinner:</strong> <strong>Sophienkeller</strong> &mdash; medieval-themed cellar restaurant, staff in costumes, meat on spits. Kids love it. Or explore <strong>Dresden Neustadt</strong> for international cuisine.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 6 ==================== -->
+<div class="day-section" id="day6">
+  <div class="day-header"><h2>Day 6 &mdash; Prague (Arrive)</h2><div class="date">Monday, July 21 &middot; <span class="drive-badge">Short drive</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">Rooftop Planet Prague Hotel</span><br><span class="hotel-meta">Jul 21&ndash;24 &middot; DKK 4,577 &middot; 3 nights &middot; Confirmed</span></div>
+  <div class="card open">
+    <div class="route-summary"><span>Dresden</span><span class="arrow">&rarr;</span><span>Prague</span></div>
+    <div class="route-meta"><span id="rdist-day6">&#128663; ~150 km</span><span>&#9201; ~1.5 h</span><span>&#9889; No stop needed</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day6"></div>
+      <div class="content-block"><h4>Route</h4><p>A17/D8 south through the Ore Mountains into Czech Republic. Scenic drive through Czech-Saxon Switzerland. Short and easy.</p>
+        <div class="tip"><strong>Vignette:</strong> Buy Czech e-vignette at <strong>edalnice.cz</strong> before crossing the border (10-day ~&euro;12). Not available yet &mdash; check closer to departure.</div>
+      </div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities (Afternoon)</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Old Town Square</strong> &mdash; Astronomical Clock (every hour). Stroller-friendly.</li>
+      <li><strong>Charles Bridge</strong> &mdash; less crowded in late afternoon/evening.</li>
+      <li><strong>Pet&rcaron;&iacute;n Tower &amp; funicular</strong> &mdash; mini "Eiffel Tower" with mirror maze at the top. Kids love the funicular ride up.</li>
+      <li><strong>Trdelník</strong> from a street stall &mdash; chimney cakes the kids will love.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Dinner:</strong> <strong>Lokál Dlouh&aacute;</strong> &mdash; authentic Czech pub (sv&iacute;&ccaron;kov&aacute;, schnitzel, dumplings). ~&euro;8&ndash;15/person. Prague is very affordable!</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 7 ==================== -->
+<div class="day-section" id="day7">
+  <div class="day-header"><h2>Day 7 &mdash; Prague</h2><div class="date">Tuesday, July 22 &middot; <span class="no-drive-badge">No driving</span></div></div>
+  <div class="card open"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body" style="display:block"><div class="content-block"><h4>Morning</h4><ul>
+      <li><strong>Prague Zoo</strong> &mdash; one of the best in Europe. Huge, spread across a hillside. Gorillas, elephants, Indonesian jungle pavilion. Chair lift across the zoo. Baby-friendly. Allow 4&ndash;5 hours.</li>
+    </ul></div>
+    <div class="content-block"><h4>Afternoon / Evening</h4><ul>
+      <li><strong>N&aacute;plavka riverbank</strong> &mdash; walk along the Vltava, paddle boats, waterfront food stalls.</li>
+      <li><strong>Kampa Island</strong> &mdash; park with playgrounds, David &Ccaron;ern&yacute; baby sculptures.</li>
+      <li>Walk along the Vltava at sunset. Street performers on Charles Bridge.</li>
+    </ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Dinner:</strong> <strong>U Fleků</strong> &mdash; Prague's oldest brewery (est. 1499). Or <strong>Na&scaron;e maso</strong> for incredible burgers.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 8 ==================== -->
+<div class="day-section" id="day8">
+  <div class="day-header"><h2>Day 8 &mdash; Prague</h2><div class="date">Wednesday, July 23 &middot; <span class="no-drive-badge">No driving</span></div></div>
+  <div class="card open"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body" style="display:block"><div class="content-block"><h4>Morning</h4><ul>
+      <li><strong>Prague Castle</strong> &mdash; largest ancient castle complex. St. Vitus Cathedral, Golden Lane, toy museum. Arrive early (9:00) to beat crowds.</li>
+    </ul></div>
+    <div class="content-block"><h4>Afternoon</h4><ul>
+      <li><strong>Letn&aacute; Park</strong> &mdash; great playground, beer garden with panoramic river view. Walk downhill from the castle.</li>
+      <li><strong>National Technical Museum</strong> &mdash; vintage cars, trains, planes. Right next to Letn&aacute; Park.</li>
+    </ul></div>
+    <div class="content-block"><h4>Alternative / if time</h4><ul>
+      <li><strong>Pedal boats on the Vltava</strong> &mdash; rent near Slav Island. Fun for the whole family.</li>
+      <li><strong>K&rcaron;i&zcaron;&iacute;k Fountain</strong> &mdash; musical water &amp; light show at the Exhibition Grounds (evening, seasonal).</li>
+    </ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Lunch:</strong> <strong>Strahov Monastery Brewery</strong> &mdash; views over Prague.</li>
+      <li><strong>Dinner:</strong> <strong>Eska</strong> (modern Czech) or <strong>Pivovarský dům</strong> (microbrewery, kids menu). Farewell Prague!</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 9 ==================== -->
+<div class="day-section" id="day9">
+  <div class="day-header"><h2>Day 9 &mdash; Vienna (Arrive)</h2><div class="date">Thursday, July 24 &middot; <span class="drive-badge">Driving day</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">Der Wilhelmshof, Vienna</span><br><span class="hotel-meta">Jul 24&ndash;26 &middot; DKK 5,210 &middot; 2 nights &middot; Confirmed</span></div>
+  <div class="card open">
+    <div class="route-summary"><span>Prague</span><span class="arrow">&rarr;</span><span>Vienna</span></div>
+    <div class="route-meta"><span id="rdist-day9">&#128663; ~330 km</span><span>&#9201; ~3.5 h</span><span>&#9889; 1 charge stop</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day9"></div>
+      <div class="content-block"><h4>Route</h4><p>D1 southeast via Brno, then south into Austria to Vienna.</p>
+        <div class="tip tip-green"><strong>Vignette:</strong> Austrian e-vignette &#10003; Purchased.</div>
+      </div>
+      <div class="content-block"><h4>Charging</h4><ul><li><strong>Tesla Supercharger Brno</strong> &mdash; midpoint (~210 km). 20&ndash;30 min.</li></ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities (Afternoon)</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Sch&ouml;nbrunn Palace &amp; gardens</strong> &mdash; walk the gardens (free), maze &amp; labyrinth (kids love it), <strong>Sch&ouml;nbrunn Zoo</strong> next door.</li>
+      <li><strong>Naschmarkt</strong> &mdash; famous outdoor food market for afternoon strolling and snacking.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Dinner:</strong> <strong>Figlm&uuml;ller</strong> &mdash; Vienna's famous Wiener Schnitzel (plate-sized!). Book ahead. Or <strong>Schweizerhaus</strong> in the Prater &mdash; beer garden with pork knuckle.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 10 ==================== -->
+<div class="day-section" id="day10">
+  <div class="day-header"><h2>Day 10 &mdash; Vienna</h2><div class="date">Friday, July 25 &middot; <span class="no-drive-badge">No driving</span></div></div>
+  <div class="highlight-box"><h4>&#127917; Wiener Prater</h4><p>Vienna's legendary amusement park since 1897. Giant Ferris Wheel, roller coasters (Boomerang, Black Mamba, Megablitz, Wilde Maus), bumper cars, go-karts, ghost train. Free entry &mdash; pay per ride or buy a wristband. This is your roller coaster day!</p></div>
+  <div class="card open"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body" style="display:block"><div class="content-block"><h4>Morning/afternoon: Prater</h4><ul>
+      <li><strong>Giant Ferris Wheel (Riesenrad)</strong> &mdash; 65m high. ~&euro;14/adult, ~&euro;6/child.</li>
+      <li><strong>Roller coasters:</strong> Boomerang, Black Mamba, Megablitz, Wilde Maus. Mix of family and thrill.</li>
+      <li><strong>For the 1-year-old:</strong> carousels, mini-trains, Lilliputbahn miniature railway.</li>
+      <li>Prater grounds are <strong>free</strong>. Pay per ride (&euro;3&ndash;6) or wristband.</li>
+    </ul></div>
+    <div class="content-block"><h4>Alternative / afternoon</h4><ul>
+      <li><strong>Haus des Meeres</strong> &mdash; aquarium in a WWII flak tower. Sharks, monkeys on rooftop.</li>
+      <li><strong>Danube Island (Donauinsel)</strong> &mdash; swim in the Alte Donau. Free sandy beaches.</li>
+    </ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Lunch:</strong> Prater food stands &mdash; Langos, W&uuml;rstel, Leberk&auml;se.</li>
+      <li><strong>Afternoon:</strong> <strong>Caf&eacute; Central</strong> or <strong>Caf&eacute; Sacher</strong> for Sachertorte.</li>
+      <li><strong>Dinner:</strong> <strong>Plachutta</strong> for Tafelspitz, or <strong>Bitzinger W&uuml;rstelstand</strong> near the Albertina.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 11 ==================== -->
+<div class="day-section" id="day11">
+  <div class="day-header"><h2>Day 11 &mdash; Bratislava</h2><div class="date">Saturday, July 26 &middot; <span class="drive-badge">Shortest drive</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">Park Inn by Radisson Danube Bratislava</span><br><span class="hotel-meta">Jul 26&ndash;27 &middot; DKK 1,147 &middot; Confirmed</span></div>
+  <div class="card open">
+    <div class="route-summary"><span>Vienna</span><span class="arrow">&rarr;</span><span>Bratislava</span></div>
+    <div class="route-meta"><span id="rdist-day11">&#128663; ~80 km</span><span>&#9201; ~1 h</span><span>&#9889; No charge needed</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day11"></div>
+      <div class="content-block"><p>Shortest drive of the trip. Sleep in, enjoy a Vienna morning, drive after lunch.</p>
+        <div class="tip tip-green"><strong>Vignette:</strong> Slovak e-vignette &#10003; Purchased.</div>
+      </div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Old Town walk</strong> &mdash; fun bronze statues: Cumil (man in manhole), Paparazzo, soldier on bench.</li>
+      <li><strong>Bratislava Castle</strong> &mdash; hilltop Danube views. Free grounds.</li>
+      <li><strong>UFO Observation Deck</strong> &mdash; flying-saucer viewpoint on SNP Bridge. ~&euro;8.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Dinner:</strong> <strong>Slovak Pub</strong> &mdash; underground, massive portions, bryndzov&eacute; halu&scaron;ky (national dish). Very affordable.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 12 ==================== -->
+<div class="day-section" id="day12">
+  <div class="day-header"><h2>Day 12 &mdash; Brno</h2><div class="date">Sunday, July 27 &middot; <span class="drive-badge">Short drive</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">Grandezza Hotel Luxury Palace, Brno</span><br><span class="hotel-meta">Jul 27&ndash;28 &middot; DKK 1,862 &middot; Confirmed</span></div>
+  <div class="card open">
+    <div class="route-summary"><span>Bratislava</span><span class="arrow">&rarr;</span><span>Brno</span></div>
+    <div class="route-meta"><span id="rdist-day12">&#128663; ~130 km</span><span>&#9201; ~1.5 h</span><span>&#9889; No stop needed</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day12"></div>
+      <div class="content-block"><h4>Route</h4><p>D2 north from Bratislava into Czech Republic, then D1 to Brno. Fast motorway.</p></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities (Afternoon)</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>&Scaron;pilberk Castle</strong> &mdash; hilltop fortress with panoramic views. Free grounds, kids can run the ramparts.</li>
+      <li><strong>Brno Underground</strong> &mdash; guided tour of tunnels beneath the old town. Ossuary is one of Europe's largest.</li>
+      <li><strong>Cathedral of St. Peter and Paul</strong> &mdash; tower views over the city.</li>
+      <li><strong>Zelný trh (Vegetable Market)</strong> &mdash; lovely square with fountain, stalls, caf&eacute;s.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Dinner:</strong> <strong>Lokál U Caipla</strong> &mdash; Czech classics, tank beer. Or <strong>Borgo Agnese</strong> &mdash; Italian with garden. Czech food is ~&euro;7&ndash;12/person.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 13 ==================== -->
+<div class="day-section" id="day13">
+  <div class="day-header"><h2>Day 13 &mdash; Leipzig</h2><div class="date">Monday, July 28 &middot; <span class="drive-badge">Longest drive</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">NH Leipzig Zentrum</span><br><span class="hotel-meta">Jul 28&ndash;29 &middot; DKK 1,371 &middot; Confirmed</span></div>
+  <div class="card open">
+    <div class="route-summary"><span>Brno</span><span class="arrow">&rarr;</span><span>Leipzig</span></div>
+    <div class="route-meta"><span id="rdist-day13">&#128663; ~450 km</span><span>&#9201; ~4.5 h</span><span>&#9889; 1&ndash;2 charge stops</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day13"></div>
+      <div class="content-block"><h4>Route</h4><p>D1 northwest via Prague ring road (bypass the city on the highway), then D8/A17 toward Dresden, then A14 to Leipzig. Longest drive of the trip &mdash; depart early.</p>
+        <div class="tip"><strong>Strategy:</strong> Leave Brno by 8&ndash;9 am. Charge near Prague or Dresden (~200&ndash;250 km). Arrive Leipzig by early afternoon.</div>
+      </div>
+      <div class="content-block"><h4>Charging</h4><ul>
+        <li><strong>Tesla Supercharger Prague ring</strong> or <strong>Dresden</strong> &mdash; midpoint.</li>
+        <li>Charge at Leipzig on arrival for tomorrow's drive.</li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities (Afternoon)</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Leipzig Zoo &amp; Gondwanaland</strong> &mdash; one of Europe's best zoos. <strong>Gondwanaland</strong> is a massive indoor tropical hall with a boat ride through a rainforest. Incredible for kids. ~&euro;22/adult, ~&euro;14/child.</li>
+      <li><strong>Augustusplatz</strong> &mdash; grand city square, walk past the opera house and university.</li>
+      <li><strong>M&auml;dler-Passage</strong> &mdash; beautiful shopping arcade with Auerbach's Keller (Faust's cellar).</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Dinner:</strong> <strong>Auerbachs Keller</strong> &mdash; historic cellar restaurant from Goethe's Faust. Saxon cuisine. Or <strong>Bayerischer Bahnhof</strong> &mdash; brewery in the world's oldest terminus station, famous for Gose beer and schnitzel.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 14 ==================== -->
+<div class="day-section" id="day14">
+  <div class="day-header"><h2>Day 14 &mdash; L&uuml;beck (Arrive)</h2><div class="date">Tuesday, July 29 &middot; <span class="drive-badge">Driving day</span></div></div>
+  <div class="hotel-confirmed"><span class="hotel-name">Holiday Inn L&uuml;beck by IHG</span><br><span class="hotel-meta">Jul 29&ndash;31 &middot; DKK 3,185 &middot; 2 nights &middot; Confirmed</span></div>
+  <div class="card open">
+    <div class="route-summary"><span>Leipzig</span><span class="arrow">&rarr;</span><span>L&uuml;beck</span></div>
+    <div class="route-meta"><span id="rdist-day14">&#128663; ~380 km</span><span>&#9201; ~3.5 h</span><span>&#9889; 1 charge stop</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day14"></div>
+      <div class="content-block"><h4>Route</h4><p>A9 north toward Berlin, then A24/A1 northwest to L&uuml;beck. Bypasses Berlin on the ring motorway.</p></div>
+      <div class="content-block"><h4>Charging</h4><ul>
+        <li><strong>Tesla Supercharger Berlin area</strong> &mdash; midpoint, ~190 km from Leipzig.</li>
+        <li>Charge fully in L&uuml;beck &mdash; you need charge for Hansa Park tomorrow and the drive home.</li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities (Afternoon)</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Holstentor</strong> &mdash; L&uuml;beck's iconic medieval gate. One of Germany's most recognizable landmarks.</li>
+      <li><strong>L&uuml;beck Old Town</strong> (UNESCO) &mdash; walk the charming streets, see the Marienkirche, merchant houses.</li>
+      <li><strong>Niederegger Marzipan</strong> &mdash; visit the famous marzipan shop and caf&eacute;. Free museum upstairs. Buy marzipan to take home!</li>
+      <li><strong>Trave riverside</strong> &mdash; walk along the river, harbour views.</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Lunch:</strong> Grab food near a charging stop, or eat on arrival.</li>
+      <li><strong>Dinner:</strong> <strong>Schiffergesellschaft</strong> &mdash; historic maritime restaurant in a 16th-century guildhall. Model ships, long wooden tables. Very atmospheric. Or Fischbr&ouml;tchen at the harbour.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 15 ==================== -->
+<div class="day-section" id="day15">
+  <div class="day-header"><h2>Day 15 &mdash; Hansa Park!</h2><div class="date">Wednesday, July 30 &middot; <span class="drive-badge">Short drive to park</span></div></div>
+  <div class="highlight-box">
+    <h4>&#127917; Hansa Park &mdash; Roller Coaster Day!</h4>
+    <p>Germany's only theme park by the sea, in Sierksdorf (~30 min from L&uuml;beck). Major roller coasters, water rides, family rides, and a Baltic Sea beach. One of northern Germany's best amusement parks.</p>
+  </div>
+  <div class="card open">
+    <div class="route-summary"><span>L&uuml;beck</span><span class="arrow">&rarr;</span><span>Hansa Park, Sierksdorf</span></div>
+    <div class="route-meta"><span id="rdist-day15">&#128663; ~30 km</span><span>&#9201; ~30 min</span></div>
+    <div class="card-body" style="display:block"><div class="day-map" id="map-day15"></div></div>
+  </div>
+  <div class="card open"><div class="card-header"><span class="icon">&#11088;</span><span class="title">Activities</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body" style="display:block"><div class="content-block"><ul>
+      <li>Drive ~30 min north to <strong>Hansa Park, Sierksdorf</strong>.</li>
+      <li><strong>K&auml;rnan</strong> &mdash; 127m tall coaster with an indoor free-fall drop. The flagship ride. Height min 130 cm.</li>
+      <li><strong>Nessie</strong> &mdash; classic looping coaster. A family favourite.</li>
+      <li><strong>Fluch von Novgorod</strong> &mdash; launched dark ride coaster. Intense and amazing.</li>
+      <li><strong>Der kleine Zar, Barentsee, Schlange von Midgard</strong> &mdash; family rides the 9 &amp; 10 year olds can enjoy.</li>
+      <li><strong>Water rides:</strong> Wildwasserbahn (log flume), Sturmfahrt (rapids).</li>
+      <li><strong>For the 1-year-old:</strong> Kinderland area with gentle rides, carousels, play areas.</li>
+      <li><strong>Entry:</strong> ~&euro;45&ndash;50/person. Under 3 free. Book online at hansapark.de.</li>
+      <li><strong>Beach:</strong> Hansa Park is right on the Baltic Sea &mdash; there's a beach area in the park!</li>
+    </ul></div>
+    <div class="content-block">
+      <div class="tip"><strong>Full day:</strong> Arrive at opening (~9:00), do the big coasters first before queues build. Eat lunch in the park. Stay until closing.</div>
+    </div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Lunch:</strong> In the park &mdash; various themed restaurants and food stands.</li>
+      <li><strong>Dinner:</strong> Back in L&uuml;beck. Try <strong>Kartoffelkeller</strong> (potato-themed restaurant, kids love it) or <strong>Niederegger Caf&eacute;</strong> for marzipan dessert.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== DAY 16 ==================== -->
+<div class="day-section" id="day16">
+  <div class="day-header"><h2>Day 16 &mdash; Home!</h2><div class="date">Thursday, July 31 &middot; <span class="drive-badge">Final drive</span></div></div>
+  <div class="card open">
+    <div class="route-summary"><span>L&uuml;beck</span><span class="arrow">&rarr;</span><span>Puttgarden</span><span class="arrow">&rarr;</span><span>R&oslash;dby</span><span class="arrow">&rarr;</span><span>Copenhagen</span></div>
+    <div class="route-meta"><span id="rdist-day16">&#128663; ~250 km</span><span>&#9881; ~45 min ferry</span><span>&#9201; ~3.5 h total</span></div>
+    <div class="card-body" style="display:block">
+      <div class="day-map" id="map-day16"></div>
+      <div class="content-block"><h4>Route</h4><p>A1 north from L&uuml;beck to Puttgarden on Fehmarn (~80 km, ~1 h). <strong>Scandlines ferry</strong> to R&oslash;dby (~45 min). Then E47 north to Copenhagen (~170 km, ~2 h).</p>
+        <div class="tip tip-green"><strong>Ferry booked!</strong> Puttgarden &rarr; R&oslash;dby, departs <strong>15:50</strong>, arrives <strong>16:35</strong>. Home by early evening.</div>
+      </div>
+      <div class="content-block"><h4>Charging</h4><ul>
+        <li>Charge fully in L&uuml;beck before departure. 250 km is well within range.</li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127860;</span><span class="title">Meals</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Lunch:</strong> On the ferry, or stop at a Danish bakery for wienerbrød once home.</li>
+      <li><strong>Dinner:</strong> Home! Order your favourite takeaway and start going through the photos.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== PACKING ==================== -->
+<div class="day-section" id="packing">
+  <div class="day-header"><h2>Packing List</h2><div class="date">16 days, 3 kids, 1 Tesla</div></div>
+  <div class="card open"><div class="card-header"><span class="icon">&#127890;</span><span class="title">Baby (1-year-old)</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body" style="display:block"><div class="checklist" data-group="baby">
+      <label><input type="checkbox"> <span>Car seat</span></label>
+      <label><input type="checkbox"> <span>Stroller (compact/travel)</span></label>
+      <label><input type="checkbox"> <span>Swim diapers (lots!)</span></label>
+      <label><input type="checkbox"> <span>Nappies for 16 days (or buy en route)</span></label>
+      <label><input type="checkbox"> <span>Baby sunscreen SPF 50+</span></label>
+      <label><input type="checkbox"> <span>Sun hat + UV swim suit</span></label>
+      <label><input type="checkbox"> <span>Portable highchair / booster</span></label>
+      <label><input type="checkbox"> <span>Baby food / snacks for car</span></label>
+      <label><input type="checkbox"> <span>Baby carrier (for cobblestone towns)</span></label>
+      <label><input type="checkbox"> <span>Favourite toys / comfort items</span></label>
+    </div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#127946;</span><span class="title">Kids (9 &amp; 10)</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="checklist" data-group="kids">
+      <label><input type="checkbox"> <span>Swimsuits (2 each)</span></label>
+      <label><input type="checkbox"> <span>Water shoes / flip flops</span></label>
+      <label><input type="checkbox"> <span>Sunscreen + sunglasses</span></label>
+      <label><input type="checkbox"> <span>Tablets + headphones (2 sets!)</span></label>
+      <label><input type="checkbox"> <span>Car chargers for devices</span></label>
+      <label><input type="checkbox"> <span>Card games / travel games</span></label>
+      <label><input type="checkbox"> <span>Snacks for the car (lots)</span></label>
+      <label><input type="checkbox"> <span>Refillable water bottles</span></label>
+      <label><input type="checkbox"> <span>Light rain jacket</span></label>
+      <label><input type="checkbox"> <span>Comfortable walking shoes</span></label>
+    </div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#9889;</span><span class="title">EV &amp; Car</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="checklist" data-group="ev">
+      <label><input type="checkbox"> <span>Tesla charging cable (Type 2)</span></label>
+      <label><input type="checkbox"> <span>Charging adapter set</span></label>
+      <label><input type="checkbox"> <span>Tesla account &amp; payment set up</span></label>
+      <label><input type="checkbox"> <span>Download offline maps (all countries)</span></label>
+      <label><input type="checkbox"> <span>Sunshade for rear windows</span></label>
+      <label><input type="checkbox"> <span>12V cooler bag</span></label>
+      <label><input type="checkbox"> <span>First aid kit</span></label>
+      <label><input type="checkbox"> <span>Warning triangle &amp; safety vest</span></label>
+    </div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#128196;</span><span class="title">Documents &amp; Bookings</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="checklist" data-group="docs">
+      <label><input type="checkbox"> <span>Passports / ID cards (all 5)</span></label>
+      <label><input type="checkbox"> <span>European Health Insurance Cards</span></label>
+      <label><input type="checkbox"> <span>Car insurance green card</span></label>
+      <label><input type="checkbox"> <span>Driver's license + vehicle registration</span></label>
+      <label><input type="checkbox"> <span>Travel insurance documents</span></label>
+      <label><input type="checkbox"> <span>Hotel confirmations (offline copies)</span></label>
+      <label><input type="checkbox"> <span>Czech e-vignette (edalnice.cz) &mdash; not available yet</span></label>
+      <label><input type="checkbox"> <span>Austrian e-vignette &#10003;</span></label>
+      <label><input type="checkbox"> <span>Slovak e-vignette &#10003;</span></label>
+      <label><input type="checkbox"> <span>Scandlines ferries &#10003; (Jul 16 13:30 &amp; Jul 31 15:50)</span></label>
+      <label><input type="checkbox"> <span>Hansa Park tickets (hansapark.de)</span></label>
+      <label><input type="checkbox"> <span>Tropical Islands entry (if separate)</span></label>
+    </div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#128092;</span><span class="title">General</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="checklist" data-group="general">
+      <label><input type="checkbox"> <span>Beach towels (quick-dry)</span></label>
+      <label><input type="checkbox"> <span>Beach toys (bucket, spade)</span></label>
+      <label><input type="checkbox"> <span>Power bank for phones</span></label>
+      <label><input type="checkbox"> <span>Medications / first aid</span></label>
+      <label><input type="checkbox"> <span>Reusable shopping bags</span></label>
+    </div></div>
+  </div>
+</div>
+
+<!-- ==================== INFO ==================== -->
+<div class="day-section" id="info">
+  <div class="day-header"><h2>Practical Info</h2><div class="date">Useful references</div></div>
+  <div class="card open"><div class="card-header"><span class="icon">&#9889;</span><span class="title">EV Charging</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body" style="display:block"><div class="content-block"><h4>Tesla Standard Range RWD</h4><ul>
+      <li><strong>Real summer range:</strong> ~280&ndash;320 km (AC, passengers, luggage, 120&ndash;130 km/h)</li>
+      <li><strong>Rule:</strong> Any leg over 250 km needs a Supercharger stop</li>
+      <li><strong>Use Tesla nav</strong> &mdash; it routes through optimal Superchargers</li>
+      <li><strong>Charge to 80%</strong> at Superchargers. 100% only overnight.</li>
+    </ul></div>
+    <div class="content-block"><h4>Coverage</h4><ul>
+      <li><strong>Germany:</strong> Excellent. Dense network.</li>
+      <li><strong>Czech Republic:</strong> Good. Prague, Brno, D1/D8.</li>
+      <li><strong>Austria:</strong> Good. Vienna, along A1.</li>
+      <li><strong>Slovakia:</strong> Adequate. Bratislava covered.</li>
+    </ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#128176;</span><span class="title">Vignettes</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Czech Republic:</strong> edalnice.cz &mdash; 10-day ~&euro;12. <em>Not available yet &mdash; check closer to departure.</em></li>
+      <li><strong>Austria:</strong> &#10003; Purchased</li>
+      <li><strong>Slovakia:</strong> &#10003; Purchased</li>
+      <li><strong>Germany &amp; Denmark:</strong> No vignette needed</li>
+    </ul>
+    <div class="tip">All linked to license plate. No sticker. Czech vignette still to buy. Fines &euro;100&ndash;300+.</div>
+    </div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#128178;</span><span class="title">Currency</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Germany &amp; Austria &amp; Slovakia:</strong> Euro (&euro;)</li>
+      <li><strong>Czech Republic:</strong> CZK (~25 CZK = &euro;1)</li>
+    </ul>
+    <div class="tip tip-green">Cards work everywhere. Revolut or Wise with no FX fees is ideal.</div>
+    </div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#128222;</span><span class="title">Emergency</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>EU Emergency:</strong> 112 (all countries)</li>
+      <li><strong>Tesla Roadside:</strong> +45 70 20 15 18 or Tesla app</li>
+    </ul></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="icon">&#128161;</span><span class="title">Tips</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div class="content-block"><ul>
+      <li><strong>Speed limits:</strong> CZ 130, AT 130, SK 130, DE no limit (130 recommended for range).</li>
+      <li><strong>Nap strategy:</strong> Baby naps during drives.</li>
+      <li><strong>Water parks:</strong> Bring towels. Lockers need coins.</li>
+      <li><strong>Google Translate:</strong> Download offline packs for Czech, Slovak.</li>
+      <li><strong>Roaming:</strong> EU rules apply everywhere. Your Danish plan works.</li>
+      <li><strong>Book ahead:</strong> Hansa Park, Scandlines ferries, Tropical Islands entry.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<!-- ==================== EXPENSES ==================== -->
+<div class="day-section" id="expenses">
+  <div class="day-header"><h2>Expenses</h2><div class="date">Track spending as you go</div></div>
+
+  <div class="card open">
+    <div class="card-header"><span class="icon">&#128176;</span><span class="title">Summary</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div id="exp-summary"><p class="exp-empty">No expenses yet.</p></div></div>
+  </div>
+
+  <div class="card open">
+    <div class="card-header"><span class="icon">&#43;</span><span class="title">Add Expense</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body">
+      <div class="exp-form-row">
+        <label>Amount</label>
+        <input type="number" id="exp-amount" inputmode="decimal" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div class="exp-form-row">
+        <label>Currency</label>
+        <div class="exp-currency-btns">
+          <button type="button" class="exp-currency-btn active" data-currency="EUR">EUR &euro;</button>
+          <button type="button" class="exp-currency-btn" data-currency="DKK">DKK kr</button>
+          <button type="button" class="exp-currency-btn" data-currency="CZK">CZK K&#269;</button>
+        </div>
+      </div>
+      <div class="exp-form-row">
+        <label>Category</label>
+        <select id="exp-category">
+          <option value="food">&#127869; Food &amp; Drink</option>
+          <option value="hotel">&#127968; Accommodation</option>
+          <option value="activity">&#127921; Activities</option>
+          <option value="fuel">&#9889; Fuel / Charging</option>
+          <option value="ferry">&#9972; Ferry</option>
+          <option value="shop">&#128717; Shopping</option>
+          <option value="other">&#128230; Other</option>
+        </select>
+      </div>
+      <div class="exp-form-row">
+        <label>Day</label>
+        <select id="exp-day"></select>
+      </div>
+      <div class="exp-form-row">
+        <label>Description <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <input type="text" id="exp-desc" placeholder="e.g. Lunch at Prater">
+      </div>
+      <button class="exp-submit" id="exp-submit-btn">Add Expense</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="icon">&#128202;</span><span class="title">By Category</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div id="exp-cats"><p class="exp-empty">No expenses yet.</p></div></div>
+  </div>
+
+  <div class="card open">
+    <div class="card-header"><span class="icon">&#129534;</span><span class="title">All Expenses</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body"><div id="exp-list"><p class="exp-empty">No expenses yet &mdash; add your first one above!</p></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="icon">&#128190;</span><span class="title">Backup &amp; Restore</span><span class="chevron">&#9660;</span></div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Export saves a file to your device. Import restores from a previous export. Keep a backup whenever you get a chance!</p>
+      <div class="exp-backup-btns">
+        <button class="exp-backup-btn dl" onclick="exportExpensesJSON()">&#11015; JSON</button>
+        <button class="exp-backup-btn ul" onclick="document.getElementById('exp-import-file').click()">&#11014; Import</button>
+      </div>
+      <button class="exp-backup-btn csv" onclick="exportExpensesCSV()">&#128202; Export CSV (Numbers / Excel)</button>
+      <input type="file" id="exp-import-file" accept=".json" style="display:none" onchange="importExpenses(event)">
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="bottom-nav">
+  <button class="bottom-btn active" data-view="overview" onclick="showSection('overview')"><span class="icon">&#127758;</span><span>Overview</span></button>
+  <button class="bottom-btn" data-view="today" onclick="goToToday()"><span class="icon">&#128197;</span><span>Today</span></button>
+  <button class="bottom-btn" data-view="packing" onclick="showSection('packing')"><span class="icon">&#128092;</span><span>Packing</span></button>
+  <button class="bottom-btn" data-view="info" onclick="showSection('info')"><span class="icon">&#8505;</span><span>Info</span></button>
+  <button class="bottom-btn" data-view="expenses" onclick="showSection('expenses')"><span class="icon">&#128176;</span><span>Expenses</span></button>
+</div>
+
+<script>
+const stops=[
+  {name:"Copenhagen",lat:55.6761,lng:12.5683,day:0,type:"start"},
+  {name:"Rostock",lat:54.0887,lng:12.1407,day:1,type:"overnight"},
+  {name:"Berlin",lat:52.52,lng:13.405,day:2,type:"multi",nights:2},
+  {name:"Tropical Islands",lat:52.038,lng:13.749,day:4,type:"overnight"},
+  {name:"Dresden",lat:51.0504,lng:13.7373,day:5,type:"overnight"},
+  {name:"Prague",lat:50.0755,lng:14.4378,day:6,type:"multi",nights:3},
+  {name:"Vienna",lat:48.2082,lng:16.3738,day:9,type:"multi",nights:2},
+  {name:"Bratislava",lat:48.1486,lng:17.1077,day:11,type:"overnight"},
+  {name:"Brno",lat:49.1951,lng:16.6068,day:12,type:"overnight"},
+  {name:"Leipzig",lat:51.3397,lng:12.3731,day:13,type:"overnight"},
+  {name:"Lübeck",lat:53.8655,lng:10.6866,day:14,type:"multi",nights:2},
+  {name:"Copenhagen",lat:55.6761,lng:12.5683,day:16,type:"end"}
+];
+
+// Ferry port coordinates
+const P={
+  gedser:     {name:"Gedser",    lat:54.5662,lng:11.9247},
+  puttgarden: {name:"Puttgarden",lat:54.4979,lng:11.2265},
+  roedby:     {name:"Rødbyhavn", lat:54.6524,lng:11.3495}
+};
+
+// Drive segments use OSRM; ferry segments draw a gray dashed line.
+// Distance labels are updated with drive-km only (ferry crossing not counted).
+const dayMapConfig={
+  day1: {segments:[
+    {wp:[stops[0],P.gedser], type:'drive'},
+    {wp:[P.gedser,stops[1]], type:'ferry'}
+  ]},
+  day2:  {waypoints:[stops[1],stops[2]]},
+  day4:  {waypoints:[stops[2],stops[3]]},
+  day5:  {waypoints:[stops[3],stops[4]]},
+  day6:  {waypoints:[stops[4],stops[5]]},
+  day9:  {waypoints:[stops[5],stops[6]]},
+  day11: {waypoints:[stops[6],stops[7]]},
+  day12: {waypoints:[stops[7],stops[8]]},
+  day13: {waypoints:[stops[8],stops[9]]},
+  day14: {waypoints:[stops[9],stops[10]]},
+  day15: {waypoints:[stops[10],{name:"Hansa Park",lat:54.0703,lng:10.7528}]},
+  day16: {segments:[
+    {wp:[stops[10],P.puttgarden],  type:'drive'},
+    {wp:[P.puttgarden,P.roedby],   type:'ferry'},
+    {wp:[P.roedby,stops[11]],      type:'drive'}
+  ]}
+};
+
+async function fetchRoute(waypoints){
+  try{
+    const c=waypoints.map(w=>`${w.lng},${w.lat}`).join(';');
+    const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${c}?overview=full&geometries=geojson`);
+    const d=await r.json();
+    if(d.routes&&d.routes[0]){
+      return{coords:d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]),distance:Math.round(d.routes[0].distance/1000)};
+    }
+  }catch(e){}
+  return null;
+}
+
+function updateDistLabel(dayId,km){
+  const el=document.getElementById('rdist-'+dayId);
+  if(el)el.textContent=el.textContent.replace(/~?\d[\d,]*\s*km/,km+' km');
+}
+
+// Render a mix of drive (OSRM) and ferry (gray dashed) segments onto map m.
+// Sums only drive distances and updates the dist label for distId.
+function drawSegmentMap(m,segments,distId){
+  const seen=new Set(),pts=[];
+  segments.forEach(seg=>seg.wp.forEach(w=>{
+    const k=`${w.lat},${w.lng}`;
+    if(!seen.has(k)){seen.add(k);pts.push(w);}
+  }));
+  const n=pts.length;
+  pts.forEach((w,i)=>{
+    const fill=i===0?'#34a853':i===n-1?'#ea4335':'#1a73e8';
+    L.circleMarker([w.lat,w.lng],{radius:7,fillColor:fill,color:'#fff',weight:2,fillOpacity:1}).addTo(m).bindPopup(`<strong>${w.name}</strong>`);
+  });
+  m.fitBounds(pts.map(w=>[w.lat,w.lng]),{padding:[28,28]});
+  const promises=segments.map(seg=>{
+    if(seg.type==='ferry'){
+      L.polyline(seg.wp.map(w=>[w.lat,w.lng]),{color:'#6c757d',weight:3,opacity:.75,dashArray:'10,8'}).addTo(m);
+      return Promise.resolve(0);
+    }
+    const fb=L.polyline(seg.wp.map(w=>[w.lat,w.lng]),{color:'#1a73e8',weight:2,opacity:.35,dashArray:'6,6'}).addTo(m);
+    return fetchRoute(seg.wp).then(r=>{
+      if(!r)return 0;
+      m.removeLayer(fb);
+      L.polyline(r.coords,{color:'#1a73e8',weight:3,opacity:.85}).addTo(m);
+      return r.distance;
+    });
+  });
+  Promise.all(promises).then(dists=>{
+    const km=dists.reduce((a,b)=>a+b,0);
+    if(km>0&&distId)updateDistLabel(distId,km);
+  });
+}
+
+// Overview map — split at ferry crossings so each ferry shows as gray dashed
+// and land routes are fetched from OSRM separately.
+const map=L.map('map',{scrollWheelZoom:false,dragging:!L.Browser.mobile}).setView([51.5,13],5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:18}).addTo(map);
+stops.forEach((s,i)=>{
+  if(i===stops.length-1&&s.name===stops[0].name)return;
+  const m2=s.type==='multi';
+  L.circleMarker([s.lat,s.lng],{radius:m2?8:6,fillColor:m2?'#1a73e8':'#ea4335',color:'#fff',weight:2,fillOpacity:1}).addTo(map)
+   .bindPopup(`<strong>${s.name}</strong>${s.nights?' ('+s.nights+' nights)':s.type==='overnight'?' (1 night)':''}<br>Day ${s.day}`);
+});
+map.fitBounds(stops.map(s=>[s.lat,s.lng]),{padding:[30,30]});
+
+const overviewSegments=[
+  {wp:[stops[0],P.gedser],        type:'drive'},  // Copenhagen → Gedser
+  {wp:[P.gedser,stops[1]],        type:'ferry'},  // Gedser ⟶ Rostock (Scandlines)
+  {wp:stops.slice(1,11),          type:'drive'},  // Rostock → … → Lübeck (all land)
+  {wp:[stops[10],P.puttgarden],   type:'drive'},  // Lübeck → Puttgarden
+  {wp:[P.puttgarden,P.roedby],    type:'ferry'},  // Puttgarden ⟶ Rødby (Scandlines)
+  {wp:[P.roedby,stops[11]],       type:'drive'}   // Rødby → Copenhagen
+];
+const ovFb=[];
+overviewSegments.forEach(seg=>{
+  const style=seg.type==='ferry'
+    ?{color:'#6c757d',weight:3,opacity:.65,dashArray:'10,8'}
+    :{color:'#1a73e8',weight:2,opacity:.3,dashArray:'6,6'};
+  ovFb.push(L.polyline(seg.wp.map(w=>[w.lat,w.lng]),style).addTo(map));
+});
+overviewSegments.forEach((seg,i)=>{
+  if(seg.type==='ferry')return; // dashed gray is already correct
+  fetchRoute(seg.wp).then(r=>{
+    if(!r)return;
+    map.removeLayer(ovFb[i]);
+    L.polyline(r.coords,{color:'#1a73e8',weight:3,opacity:.8}).addTo(map);
+  });
+});
+
+// Per-day maps — initialised lazily when the tab becomes visible
+const dayMapsInit={};
+function initDayMap(dayId){
+  const cfg=dayMapConfig[dayId];
+  if(!cfg)return;
+  const el=document.getElementById('map-'+dayId);
+  if(!el)return;
+  if(dayMapsInit[dayId]){dayMapsInit[dayId].invalidateSize();return;}
+  const m=L.map(el,{scrollWheelZoom:false,dragging:!L.Browser.mobile,attributionControl:false,zoomControl:false});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(m);
+  dayMapsInit[dayId]=m;
+  if(cfg.segments){
+    drawSegmentMap(m,cfg.segments,dayId);
+  } else {
+    const wps=cfg.waypoints,bounds=wps.map(w=>[w.lat,w.lng]);
+    wps.forEach((w,i)=>L.circleMarker([w.lat,w.lng],{radius:7,fillColor:i===0?'#34a853':'#ea4335',color:'#fff',weight:2,fillOpacity:1}).addTo(m).bindPopup(`<strong>${w.name}</strong>`));
+    const fb=L.polyline(bounds,{color:'#1a73e8',weight:2,opacity:.35,dashArray:'6,6'}).addTo(m);
+    m.fitBounds(bounds,{padding:[28,28]});
+    fetchRoute(wps).then(r=>{
+      if(!r)return;
+      m.removeLayer(fb);
+      L.polyline(r.coords,{color:'#1a73e8',weight:3,opacity:.85}).addTo(m);
+      m.fitBounds(r.coords,{padding:[22,22]});
+      updateDistLabel(dayId,r.distance);
+    });
+  }
+}
+
+function showSection(id){
+  document.querySelectorAll('.day-section').forEach(el=>el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.target===id));
+  document.querySelectorAll('.bottom-btn').forEach(b=>{
+    b.classList.remove('active');
+    if(b.dataset.view===id)b.classList.add('active');
+    if(id.startsWith('day')&&b.dataset.view==='today')b.classList.add('active');
+    if(!['overview','packing','info'].includes(id)&&b.dataset.view==='overview')b.classList.remove('active');
+  });
+  const t=document.querySelector(`.tab-btn[data-target="${id}"]`);
+  if(t)t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  window.scrollTo({top:document.querySelector('.tab-bar').offsetTop,behavior:'smooth'});
+  if(dayMapConfig[id])initDayMap(id);
+}
+function goToToday(){
+  const s=new Date(2026,6,16),d=Math.floor((new Date()-s)/(864e5))+1;
+  showSection(d>=1&&d<=16?'day'+d:'day1');
+}
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>showSection(b.dataset.target)));
+document.querySelectorAll('.card-header').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('open')));
+
+function saveChecklist(){const s={};document.querySelectorAll('.checklist input[type="checkbox"]').forEach((c,i)=>{if(c.checked)s[i]=true});try{localStorage.setItem('roadtrip2026_cl',JSON.stringify(s))}catch(e){}}
+function loadChecklist(){try{const s=JSON.parse(localStorage.getItem('roadtrip2026_cl')||'{}');document.querySelectorAll('.checklist input[type="checkbox"]').forEach((c,i)=>{if(s[i]){c.checked=true;c.parentElement.querySelector('span').classList.add('checked')}})}catch(e){}}
+document.querySelectorAll('.checklist input[type="checkbox"]').forEach(c=>c.addEventListener('change',()=>{c.parentElement.querySelector('span').classList.toggle('checked',c.checked);saveChecklist()}));
+loadChecklist();
+
+let tx=0;const secs=['overview','day1','day2','day3','day4','day5','day6','day7','day8','day9','day10','day11','day12','day13','day14','day15','day16','packing','info','expenses'];
+document.querySelector('.section-wrap').addEventListener('touchstart',e=>{tx=e.changedTouches[0].screenX},{passive:true});
+document.querySelector('.section-wrap').addEventListener('touchend',e=>{const d=tx-e.changedTouches[0].screenX;if(Math.abs(d)<80)return;const c=secs.findIndex(s=>document.getElementById(s).classList.contains('active'));if(d>0&&c<secs.length-1)showSection(secs[c+1]);else if(d<0&&c>0)showSection(secs[c-1])},{passive:true});
+
+// ==================== EXPENSE TRACKER ====================
+const EXP_KEY='roadtrip2026_exp';
+const CATS=[
+  {id:'food',    label:'Food & Drink',   icon:'🍽️'},
+  {id:'hotel',   label:'Accommodation',  icon:'🏨'},
+  {id:'activity',label:'Activities',     icon:'🎡'},
+  {id:'fuel',    label:'Fuel/Charging',  icon:'⚡'},
+  {id:'ferry',   label:'Ferry',          icon:'⛴️'},
+  {id:'shop',    label:'Shopping',       icon:'🛍️'},
+  {id:'other',   label:'Other',          icon:'📦'}
+];
+// Approximate fixed rates to DKK (EUR pegged ~7.46, CZK ~0.297)
+const RATES={EUR:7.46,DKK:1,CZK:0.297};
+
+let expCurrency='EUR';
+
+document.querySelectorAll('.exp-currency-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    expCurrency=btn.dataset.currency;
+    document.querySelectorAll('.exp-currency-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  });
+});
+
+(function buildDaySelect(){
+  const sel=document.getElementById('exp-day');
+  const tripStart=new Date(2026,6,16);
+  const today=new Date();
+  let cur=Math.floor((today-tripStart)/864e5)+1;
+  if(cur<1||cur>16)cur=1;
+  for(let i=1;i<=16;i++){
+    const opt=document.createElement('option');
+    opt.value=i;
+    opt.textContent=`Day ${i} · Jul ${15+i}`;
+    if(i===cur)opt.selected=true;
+    sel.appendChild(opt);
+  }
+})();
+
+function loadExp(){try{return JSON.parse(localStorage.getItem(EXP_KEY)||'[]');}catch(e){return[];}}
+function saveExp(arr){try{localStorage.setItem(EXP_KEY,JSON.stringify(arr));}catch(e){}}
+
+function fmtAmt(amt,cur){
+  const d=cur==='CZK'?0:2;
+  return amt.toLocaleString('en',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+
+document.getElementById('exp-submit-btn').addEventListener('click',submitExpense);
+document.getElementById('exp-amount').addEventListener('keydown',e=>{if(e.key==='Enter')submitExpense();});
+document.getElementById('exp-desc').addEventListener('keydown',e=>{if(e.key==='Enter')submitExpense();});
+
+function submitExpense(){
+  const amtInput=document.getElementById('exp-amount');
+  const amt=parseFloat(amtInput.value);
+  if(!amt||amt<=0){amtInput.focus();return;}
+  const arr=loadExp();
+  arr.push({
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    amount:Math.round(amt*100)/100,
+    currency:expCurrency,
+    category:document.getElementById('exp-category').value,
+    description:document.getElementById('exp-desc').value.trim(),
+    day:parseInt(document.getElementById('exp-day').value),
+    ts:Date.now()
+  });
+  saveExp(arr);
+  amtInput.value='';
+  document.getElementById('exp-desc').value='';
+  amtInput.focus();
+  renderExpenses();
+}
+
+function deleteExpense(id){
+  if(!confirm('Delete this expense?'))return;
+  saveExp(loadExp().filter(e=>e.id!==id));
+  renderExpenses();
+}
+
+function renderExpenses(){
+  const arr=loadExp();
+
+  // Summary — single DKK total with per-currency breakdown beneath
+  const summaryEl=document.getElementById('exp-summary');
+  if(!arr.length){
+    summaryEl.innerHTML='<p class="exp-empty">No expenses yet.</p>';
+  } else {
+    let totalDKK=0;
+    const byCur={};
+    arr.forEach(e=>{
+      totalDKK+=(RATES[e.currency]||1)*e.amount;
+      byCur[e.currency]=(byCur[e.currency]||0)+e.amount;
+    });
+    const breakdown=['EUR','DKK','CZK'].filter(c=>byCur[c])
+      .map(c=>`${fmtAmt(byCur[c],c)} ${c}`).join(' + ');
+    summaryEl.innerHTML=`<div style="text-align:center;padding:6px 0 4px">
+      <div style="font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Total spend (DKK)</div>
+      <div style="font-size:40px;font-weight:700;color:var(--text);letter-spacing:-1px">${fmtAmt(Math.round(totalDKK),'DKK')}</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:8px">${breakdown} &middot; ${arr.length} expense${arr.length===1?'':'s'}</div>
+    </div>`;
+  }
+
+  // Category breakdown — totals in DKK, sorted highest first
+  const catsEl=document.getElementById('exp-cats');
+  if(!arr.length){
+    catsEl.innerHTML='<p class="exp-empty">No expenses yet.</p>';
+  } else {
+    const bycat={};
+    arr.forEach(e=>{
+      bycat[e.category]=(bycat[e.category]||0)+(RATES[e.currency]||1)*e.amount;
+    });
+    catsEl.innerHTML=CATS.filter(c=>bycat[c.id])
+      .sort((a,b)=>bycat[b.id]-bycat[a.id])
+      .map(c=>`<div class="exp-cat-row"><span class="exp-cat-icon">${c.icon}</span><span class="exp-cat-label">${c.label}</span><span class="exp-cat-amt">${fmtAmt(Math.round(bycat[c.id]),'DKK')} kr</span></div>`)
+      .join('');
+  }
+
+  // Expense list grouped by day, newest day first
+  const listEl=document.getElementById('exp-list');
+  if(!arr.length){
+    listEl.innerHTML='<p class="exp-empty">No expenses yet &mdash; add your first one above!</p>';
+    return;
+  }
+  const byDay={};
+  arr.forEach(e=>{(byDay[e.day]=byDay[e.day]||[]).push(e);});
+  listEl.innerHTML=Object.keys(byDay).map(Number).sort((a,b)=>b-a).map(day=>{
+    const items=byDay[day].slice().sort((a,b)=>b.ts-a.ts).map(e=>{
+      const cat=CATS.find(c=>c.id===e.category)||CATS[CATS.length-1];
+      const desc=e.description||cat.label;
+      return `<div class="exp-item">
+        <span class="ci">${cat.icon}</span>
+        <div class="ei"><div class="ed">${desc}</div><div class="em">${cat.label}</div></div>
+        <span class="ea">${fmtAmt(e.amount,e.currency)} ${e.currency}</span>
+        <button class="del" onclick="deleteExpense('${e.id}')" aria-label="Delete">&#10005;</button>
+      </div>`;
+    }).join('');
+    return `<div class="exp-day-hdr">Day ${day} &middot; Jul ${15+day}</div>${items}`;
+  }).join('');
+}
+
+function exportExpensesJSON(){
+  const arr=loadExp();
+  if(!arr.length){alert('No expenses to export.');return;}
+  const blob=new Blob([JSON.stringify(arr,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`roadtrip2026-expenses-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+function exportExpensesCSV(){
+  const arr=loadExp();
+  if(!arr.length){alert('No expenses to export.');return;}
+  const rows=[['Day','Date','Category','Description','Amount','Currency']];
+  arr.slice().sort((a,b)=>a.day-b.day||a.ts-b.ts).forEach(e=>{
+    const cat=CATS.find(c=>c.id===e.category)||CATS[CATS.length-1];
+    rows.push([e.day,`2026-07-${String(15+e.day).padStart(2,'0')}`,cat.label,e.description||'',e.amount,e.currency]);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`roadtrip2026-expenses-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+function importExpenses(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!Array.isArray(data))throw 0;
+      if(confirm(`Import ${data.length} expense${data.length===1?'':'s'}? This will replace your current data.`)){
+        saveExp(data);renderExpenses();
+      }
+    }catch(err){alert('Could not read the file. Make sure it\'s a valid roadtrip expenses JSON.');}
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+renderExpenses();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
